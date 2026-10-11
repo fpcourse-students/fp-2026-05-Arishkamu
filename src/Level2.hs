@@ -16,10 +16,14 @@ data Nat = Zero | Suc Nat
   deriving (Eq, Show)
 
 makeNat :: Int -> Nat
-makeNat = todo "2.1 make"
+makeNat n
+  | n < 0     = error "makeNat doesn't work for negative n"
+  | n == 0    = Zero
+  | otherwise = Suc $ makeNat (n - 1)
 
 foldNat :: (a -> a) -> a -> Nat -> a
-foldNat = todo "2.1 fold"
+foldNat s z Zero    = z
+foldNat s z (Suc n) = s $ foldNat s z n
 
 
 -- 2.2. Другое бинарное дерево.
@@ -33,9 +37,12 @@ data BinTree a = Empty | BinNode (BinTree a) a (BinTree a)
   deriving (Eq, Show)
 
 mapBinTree :: (a -> b) -> BinTree a -> BinTree b
-mapBinTree = todo "2.2 map"
+mapBinTree f t = case t of
+  Empty         -> Empty
+  BinNode l x r -> BinNode (mapBinTree f l) (f x) (mapBinTree f r)
 
-bangAll t = todo "2.2 bang"
+bangAll :: BinTree (BinTree Int) -> BinTree (BinTree String)
+bangAll = mapBinTree $ mapBinTree (\n -> show n ++ "!")
 
 
 -- 2.3. Лексикографическое сравнение.
@@ -47,7 +54,11 @@ bangAll t = todo "2.2 bang"
 -- не передавайте целые списки стандартному (<) или compare.
 
 lexLess :: Ord a => [a] -> [a] -> Bool
-lexLess = todo "2.3"
+lexLess _ [] = False
+lexLess [] _ = True
+lexLess (x:xs) (y:ys)
+  | x == y = lexLess xs ys
+  | otherwise = x < y
 
 
 -- 2.4. Цифры.
@@ -58,7 +69,13 @@ lexLess = todo "2.3"
 -- без перевода числа в строку.
 
 digits :: Int -> [Int]
-digits = todo "2.4"
+digits n
+  | n < 0 = error "digits don't expect negative n"
+  | otherwise = go [] n
+  where
+    go acc n
+      | n < 10    = n : acc
+      | otherwise = go (n `mod` 10 : acc) (n `div` 10)
 
 
 -- 2.5. Числа Фибоначчи и списки.
@@ -75,10 +92,16 @@ fibs :: [Integer]
 fibs = 0 : 1 : zipWith (+) fibs (drop 1 fibs)
 
 isFib :: Integer -> Bool
-isFib = todo "2.5 is"
+isFib n = go fibs n
+  where
+    go (m:tail) n
+      | m == n = True
+      | m > n  = False
+      | otherwise = go tail n
+    go _ _ = False  --impossible, here for linter
 
 countFibs :: [Integer] -> Int
-countFibs = todo "2.5 count"
+countFibs = length . filter isFib
 
 
 -- 2.6. Скользящее окно.
@@ -90,7 +113,10 @@ countFibs = todo "2.5 count"
 -- Сигнатуру не меняйте.
 
 withWindow :: [a] -> Int -> [[a]]
-withWindow = todo "2.6"
+withWindow xs n
+  | n <= 0 = error "withWindow don't expect negative n"
+  | length (take n xs) < n = []
+  | otherwise = take n xs : withWindow (drop 1 xs) n
 
 
 -- 2.7. Сохраните проверенные опции в типе.
@@ -115,4 +141,8 @@ data RawOptions = RawOptions Bool (Maybe Format) (Maybe FilePath)
   deriving (Eq, Show)
 
 parseOptions :: RawOptions -> Maybe Options
-parseOptions = todo "2.7"
+parseOptions rawOption = case rawOption of
+  RawOptions True Nothing Nothing -> Just Help
+  RawOptions False (Just format) Nothing         -> Just $ Run format Stdout
+  RawOptions False (Just format) (Just filepath) -> Just $ Run format (File filepath)
+  RawOptions _ _ _    -> Nothing
